@@ -31,6 +31,7 @@ public class AceStreamRobot{
 	 */
 	public static void main(String args[]){
 
+
 		LOGGER.info("  ____    __    ___  _____ ______  ____     ___   ____  ___ ___      ____   ___   ____    ___   ______ \r\n" + 
 				" /    |  /  ]  /  _]/ ___/|      ||    \\   /  _] /    ||   |   |    |    \\ /   \\ |    \\  /   \\ |      |\r\n" + 
 				"|  o  | /  /  /  [_(   \\_ |      ||  D  ) /  [_ |  o  || _   _ |    |  D  )     ||  o  )|     ||      |\r\n" + 
@@ -56,6 +57,7 @@ public class AceStreamRobot{
 		Logger.getLogger(ProtocolHandshake.class.getName()).setLevel(Level.OFF);	   
 		ChromeOptions chromeOptions = new ChromeOptions();
 		if (!DEBUG) {
+			LOGGER.setLevel(Level.INFO);
 			System.setProperty("webdriver.chrome.args", "--disable-logging");
 			System.setProperty("webdriver.chrome.silentOutput", "true");	
 			chromeOptions.addArguments("--headless");
@@ -63,7 +65,7 @@ public class AceStreamRobot{
 
 		}
 		driver = new ChromeDriver(chromeOptions);
-		
+
 	}
 
 	/**
@@ -74,11 +76,11 @@ public class AceStreamRobot{
 
 		//Go to the site reddit
 		driver.get("https://www.reddit.com/r/soccerstreams/");
-				
-		LOGGER.info("Page opened");
+
+		LOGGER.log(Level.FINEST,"Page opened");
 		//Find the elements linked to the href
 		List<WebElement> urlWebElementList= driver.findElements(By.tagName("a"));
-			
+
 		LOGGER.info(urlWebElementList.size()+" WebElements candidates for a link");
 		//Get the url from urlWebElementList
 		Set<String> urlList= new HashSet<>();
@@ -107,18 +109,21 @@ public class AceStreamRobot{
 	 */
 	void scanPage(String url) {
 
-		
+
 		driver.get(url);
 
-		String txt= (driver.findElement(By.tagName("body"))).getText();
-
+		String bodyTxt= (driver.findElement(By.tagName("body"))).getText();
 		//Select the title of the match
-	
+
 		System.out.println("");
+		String windowTitle= driver.getTitle();
+		if (windowTitle.startsWith("[")) {
+			System.out.println("Match: "+windowTitle);
+		}
 
-		System.out.println("Match: "+driver.getTitle());
 
-		String result[]= txt.split("\n");
+
+		String result[]= bodyTxt.split("\n");
 
 		for(String line: result) {
 			if (line.contains("acestream://")) {
@@ -127,6 +132,6 @@ public class AceStreamRobot{
 		}
 
 	}
-	
-	
+
+
 }
