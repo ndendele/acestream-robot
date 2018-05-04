@@ -1,7 +1,8 @@
 package com.morgan.robots.acestream;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,14 +22,16 @@ import org.openqa.selenium.remote.ProtocolHandshake;
 public class AceStreamRobot{
 
 	private final WebDriver driver;
-	
+	private static final boolean DEBUG= false;
+	private static final Logger LOGGER =Logger.getLogger(AceStreamRobot.class.getName());
+
 	/**
 	 * Main program entry
 	 * 	 
 	 */
 	public static void main(String args[]){
 
-		System.out.println("  ____    __    ___  _____ ______  ____     ___   ____  ___ ___      ____   ___   ____    ___   ______ \r\n" + 
+		LOGGER.info("  ____    __    ___  _____ ______  ____     ___   ____  ___ ___      ____   ___   ____    ___   ______ \r\n" + 
 				" /    |  /  ]  /  _]/ ___/|      ||    \\   /  _] /    ||   |   |    |    \\ /   \\ |    \\  /   \\ |      |\r\n" + 
 				"|  o  | /  /  /  [_(   \\_ |      ||  D  ) /  [_ |  o  || _   _ |    |  D  )     ||  o  )|     ||      |\r\n" + 
 				"|     |/  /  |    _]\\__  ||_|  |_||    / |    _]|     ||  \\_/  |    |    /|  O  ||     ||  O  ||_|  |_|\r\n" + 
@@ -36,68 +39,84 @@ public class AceStreamRobot{
 				"|  |  \\     ||     |\\    |  |  |  |  .  \\|     ||  |  ||   |   |    |  .  \\     ||     ||     |  |  |  \r\n" + 
 				"|__|__|\\____||_____| \\___|  |__|  |__|\\_||_____||__|__||___|___|    |__|\\_|\\___/ |_____| \\___/   |__|  \r\n" + 
 				"                                                                                                       ");
-		System.out.println("\nPlease wait a few seconds...");		
+		LOGGER.info("\nPlease wait a few seconds...");		
 
 		new AceStreamRobot().start();
 
-		System.out.println("\nEnjoy your match! \nProvided by Acestream Robot");		
+		LOGGER.info("\nEnjoy your match! \nProvided by Acestream Robot");		
 	}
-	
+
 	/**
 	 * Default constructor
-	 * 	 
+	 * 	this method does the following:
+	 * - set the log off
+	 * - prevent the display of the driver (behave like phantom.js) 
 	 */
 	AceStreamRobot() {
 		Logger.getLogger(ProtocolHandshake.class.getName()).setLevel(Level.OFF);	   
-		System.setProperty("webdriver.chrome.args", "--disable-logging");
-		System.setProperty("webdriver.chrome.silentOutput", "true");
 		ChromeOptions chromeOptions = new ChromeOptions();
-		chromeOptions.addArguments("--headless");
+		if (!DEBUG) {
+			System.setProperty("webdriver.chrome.args", "--disable-logging");
+			System.setProperty("webdriver.chrome.silentOutput", "true");	
+			chromeOptions.addArguments("--headless");
+			chromeOptions.addArguments("--incognito");
+
+		}
 		driver = new ChromeDriver(chromeOptions);
+		
 	}
-	
+
 	/**
 	 * Get the main page and search for match links
 	 * 	 
 	 */
 	void start() {	
 
+		//Go to the site reddit
 		driver.get("https://www.reddit.com/r/soccerstreams/");
-
-		List<WebElement> liste= driver.findElements(By.cssSelector("a.title"));
-		List<String> url= new ArrayList<>();
-
-		for(WebElement e: liste) {
+				
+		LOGGER.info("Page opened");
+		//Find the elements linked to the href
+		List<WebElement> urlWebElementList= driver.findElements(By.tagName("a"));
+			
+		LOGGER.info(urlWebElementList.size()+" WebElements candidates for a link");
+		//Get the url from urlWebElementList
+		Set<String> urlList= new HashSet<>();
+		for(WebElement e: urlWebElementList) {
 			String href = e.getAttribute("href"); 
-			if(href.contains("_gmt_")){
-				url.add(href);
+			if(href!=null && href.contains("_gmt_")){
+				urlList.add(href);
+
 			}
 		}
 
-		for (String s: url) {
+		LOGGER.info("Number of url found: "+ urlList.size());
+		for (String s: urlList) {
 			scanPage(s);
 		}
 
+		driver.manage().deleteAllCookies();
+		driver.close();
 		driver.quit();
 
 	}
-	
+
 	/**
 	 * Retrieve ace-stream links from the match page
 	 * 	 
 	 */
-	void scanPage(String s) {
+	void scanPage(String url) {
 
-		driver.get(s);
+		
+		driver.get(url);
 
-		String txt= (driver.findElement(By.className("commentarea"))).getText();
+		String txt= (driver.findElement(By.tagName("body"))).getText();
 
 		//Select the title of the match
-		String title= (driver.findElement(By.className("top-matter")).findElement(By.tagName("p"))).getText().replaceAll("\n","");
+	
 		System.out.println("");
 
-		System.out.println( title.replaceAll(".", "-"));
-		System.out.println( title);
+		System.out.println("Match: "+driver.getTitle());
 
 		String result[]= txt.split("\n");
 
@@ -108,4 +127,6 @@ public class AceStreamRobot{
 		}
 
 	}
+	
+	
 }
